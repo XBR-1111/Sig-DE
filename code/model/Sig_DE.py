@@ -39,26 +39,25 @@ class SigDE:
         """
         initialization of the Sigmoid-DE algorithm class
         :param config: contains hyper-parameters of Sigmoid-DE algorithm
-        :param Y: normalized feature Y with shape (I, D, T) which determines I, T and D
-        :param r: actual rank with shape (I, T), here T is one quarter later than T in param Y
+        :param Y: normalized feature Y, a list of T np arrays with shape (I, D)
+        :param r: actual rank, a list of T np arrays with shape (I), here T is one timestamp later than T in param Y
         """
         # params
-        self.I = Y.shape[0]  # number of stocks
-        self.T = Y.shape[2]  # number of quarters
-        self.D = Y.shape[1]  # D-dimension of features, 2 * D if considering discrete and continues variables
+        self.I = [_.shape[0] for _ in Y]  # a list of numbers of training stocks
+        self.T = len(Y)  # number of timestamps
+        self.D = Y[0].shape[1]  # D-dimension of features, 2 * D if considering discrete and continues variables
         self.P = config.get('P', 30)  # population of DE algorithm
         self.beta = config.get('beta', 0.6)  # a scaled factor in (7) typically \in (0,1)
         self.Cr = config.get('Cr', 0.5)  # the crossover rate in (8) predefined between 0 and 1
         self.G = config.get('G', 100)  # iteration maximum
         self.tol = config.get('tol', 10 ** (-5))  # applied for the termination strategy
-        self.m = max(int(config.get('m_rate', 0.2) * self.I), 1)  # number of stokes selected, m/I=0.2 is recommended
 
         # normalized feature Y
-        self.Y = Y  # with shape (I, D, T)
+        self.Y = Y  # a list of T np arrays with shape (I, D)
 
         # actual rank
-        self.r = r  # with shape (I, T)
-        assert r.shape[0] == self.I and r.shape[1] == self.T
+        self.r = r  # a list of T np arrays with shape (I)
+        assert [_.shape[0] for _ in r] == self.I and len(r) == self.T
 
         # matrix that used for the DE algorithm, with shape (P, 2*D)
         self.X = None  # the population
@@ -67,22 +66,23 @@ class SigDE:
 
         # current generation
         self.g = 0
+
         # best performance
         self.max_fitness = float('-inf')  # -f in equ(5)
         self.best_variables = np.zeros(shape=2 * self.D)  # best F and W
-        self.selected_stocks = []  # np array of stock indexes
+        # self.selected_stocks = []  # np array of stock indexes
         self.best_g = 0
 
     def x_initialization(self):
         """
         initialization stage equ (6)
-        randomly generates a population of P
+        randomly generate a population of P
         :return: None
         """
 
-        # initialize x_discrete and x_continuous in different ways
+        # initialize x_discrete and x_continuous
         x_discrete = -1 + np.random.random(size=[self.P, self.D]) * 2  # \in (-1, 1)
-        x_continuous = -1 + np.random.random(size=[self.P, self.D]) * 2  # \in (0, 1)
+        x_continuous = -1 + np.random.random(size=[self.P, self.D]) * 2  # \in (-1, 1)
 
         # concat
         self.X = np.concatenate((x_discrete, x_continuous), axis=1)
@@ -150,9 +150,9 @@ class SigDE:
                 np.apply_along_axis(func1d=self.fitness_func, axis=1, arr=self.U) <= np.apply_along_axis(
                     func1d=self.fitness_func, axis=1, arr=self.X)
         )  # for each row, call fitness function
-        # print(np.apply_along_axis(func1d=self.fitness_func, axis=1, arr=self.U))
+
         assert mask.shape[0] == self.P
-        # print('in selection', mask)
+
         # apply the mask to X and U
         mask = np.expand_dims(mask, 1).repeat(self.X.shape[1], axis=1)
         X1 = mask * self.U + (~mask) * self.X
@@ -165,11 +165,15 @@ class SigDE:
         Y with shape (stocks, D, t)
         :param F: discrete variables with shape (D)
         :param W: continues variables with shape (D)
-        :return: score with shape (stocks, t)
+        :return: a list of T np arrays with shape I
         """
-        assert F.shape[0] == self.Y.shape[1] and W.shape[0] == F.shape[0]
+        assert F.shape[0] == self.Y[0].shape[1] and W.shape[0] == F.shape[0]
 
-        S = np.einsum('j,ijk->ik', F * W, self.Y)  # equ (3)
+        S = []
+        for y in self.Y:
+            # y with shape (I,D)
+            s = np.einsum('j,ij->i', F * W, y)  # equ (3)
+            S.append(s)
         return S
 
     def fitness_func(self, X):
@@ -188,44 +192,49 @@ class SigDE:
         mask = (x_sig[:self.D] != 0)
         x_sig[self.D:] = x_sig[self.D:] * mask
 
-        # calculate S_{i,t}, S with shape(I, T)
+        # calculate S_{i,t}, S is a list of T np arrays with shape I
         S = self.final_score(x_sig[:self.D], x_sig[self.D:])  # equ (3)
 
-        # get the rank r_{i,t} of score S_{i,t}, r with shape (I, T)
-        sorted_index = np.argsort(-S, axis=0)  # a list of index(desc)
-
-        r = np.zeros_like(sorted_index)  # index list to rank list
-
-        for t in range(self.T):
-            r[sorted_index[:, t], t] = np.arange(1, self.I + 1)
+        # get the rank r_{i,t} of score S_{i,t}, r wis a list of T np arrays with shape I
+        r = []
+        for index, s in enumerate(S):
+            sorted_index = np.argsort(-s, axis=0)  # a list of index(desc)
+            r_i = np.zeros_like(sorted_index)  # index list to rank list
+            r_i[sorted_index] = np.arange(1, self.I[index] + 1)
+            r.append(r_i)
         # r: each column contains (1,2,3,...,)
-        # print(r)
+
         # calculate ic_t
         ic_t_list = np.zeros(shape=[self.T])
         for t in range(self.T):
-            ic_t_list[t] = cal_ic(r[:, t], self.r[:, t])
+            ic_t_list[t] = cal_ic(r[t], self.r[t])
 
         # the avg
         fitness = ic_t_list.mean()
 
         # update best performance
-        self.update(x_sig, fitness, sorted_index)
+        self.update(x_sig, fitness)
 
         return fitness
 
-    def update(self, x_sig, fitness, sorted_index):
+    def update(self, x_sig, fitness):
+        """
+        update best performance
+        :param x_sig: parameters
+        :param fitness: fitness value
+        :return:
+        """
         if fitness > self.max_fitness:
             print('update result! fitness:%f' % fitness)
             self.max_fitness = fitness
             self.best_variables = x_sig
-            self.selected_stocks = sorted_index[:self.m]
             self.best_g = self.g
-            # with open('parameter/param.pkl', 'wb') as f:
-            #     pickle.dump(x_sig, f)
-            # with open('parameter/stocks.pkl', 'wb') as f:
-            #     pickle.dump(sorted_index, f)
 
     def run(self):
+        """
+        main function to run the model
+        :return: self.best_variables with shape (2*D), containing F and W
+        """
         self.x_initialization()
         for g in range(self.G):
             self.g = g
@@ -239,5 +248,5 @@ class SigDE:
             self.selection()
 
         # print(self.best_variables)
-        return self.selected_stocks, self.best_variables
+        return self.best_variables
 

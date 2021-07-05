@@ -12,9 +12,6 @@ def measure_performance_R(feat_param, Y, returns, m):
     :return:    1: a floating point number of R^{p}_{t+1} portfolio return of the proposed model
                 2: a floating point number of R1 portfolio return of all candidates
     """
-    # print('in measure')
-    # print(Y)
-    # print(returns)
     D = feat_param.shape[0] // 2
     S = np.einsum('j,ij->i', feat_param[:D] * feat_param[D:], Y)
 
