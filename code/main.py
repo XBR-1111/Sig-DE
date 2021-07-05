@@ -12,7 +12,7 @@ def train_and_predict():
     print('preparing data...')
 
     # get data
-    Y_data, rank_data, returns = get_all_data(mode='test')
+    Y_data, rank_data, returns = get_all_data()
     # Y: (I, D) * T rank_data: (I) * T returns: (I) * T , here rank and returns are at next timestamp
     assert [_.shape for _ in returns] == [_.shape for _ in rank_data]  # I
     # print([_.shape[0] for _ in Y_data])
@@ -37,6 +37,8 @@ def train_and_predict():
     portfolio_returns = np.zeros(shape=T - min_train_periods)
     R1_returns = np.zeros(shape=T - min_train_periods)
 
+    times_per_case = config.get('times_per_case', 1)
+
     # for each case
     for t in range(min_train_periods, T):
         # select Y_train and r_train and m
@@ -44,26 +46,29 @@ def train_and_predict():
         r_train = rank_data[:t]
         m = max(int(config.get('m_rate', 0.2) * I[t]), 1)
 
-        # init the model
-        model = SigDE(config=config, Y=Y_train, r=r_train)
-
-        # run the model and return selected stokes and the feature parameters
         print('begin to run on case %d...' % (t - min_train_periods + 1))
-        feat_param = model.run()
-        # print('selected stocks:', m_stocks)
-        # print(feat_param)
+
+        Rs = np.zeros(shape=times_per_case)
+        R1s = np.zeros(shape=times_per_case)
+
+        for times in range(times_per_case):
+            # init the model
+            model = SigDE(config=config, Y=Y_train, r=r_train, silent=True)
+
+            # run the model and return feature parameters
+            feat_param = model.run()
+
+            # measure performance of testing period
+            R, R1 = measure_performance_R(feat_param, Y_data[t], returns[t], m)
+            Rs[times] = R
+            R1s[times] = R1
+
+        portfolio_returns[t - min_train_periods] = Rs.mean()
+        R1_returns[t - min_train_periods] = R1s.mean()
+        print('portfolio_returns of the proposed method:%f' % portfolio_returns[t - min_train_periods])
+        print('portfolio_returns of all candidates(R1):%f' % R1_returns[t - min_train_periods])
+
         print('finish running on case %d...' % (t - min_train_periods + 1))
-
-        # measure performance of testing period
-
-        R, R1 = measure_performance_R(feat_param, Y_data[t], returns[t], m)
-        print('portfolio_returns of the proposed method:%f' % R)
-        print('portfolio_returns of all candidates(R1):%f' % R1)
-        # R_random = measure_performance_R(np.random.randint(0, I, size=m_stocks.shape), returns[:, t])
-        # print('portfolio_returns of random pick:%f' % R_random)
-        portfolio_returns[t - min_train_periods] = R
-        R1_returns[t - min_train_periods] = R1
-        # random_returns[t - min_train_periods] = R_random
         print('--------------------------------------------------------------')
 
     MR = cal_MR(portfolio_returns)

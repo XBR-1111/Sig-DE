@@ -29,19 +29,20 @@ def cal_ic(r_proposed, r_actual):
     :return: a floating number indicating normalized similarity
     """
     assert r_proposed.shape == r_actual.shape
-    # print(r_proposed)
-    # print(r_actual)
     return np.cov(r_proposed, r_actual)[0, 1] / np.sqrt(np.var(r_proposed) * np.var(r_actual))
 
 
 class SigDE:
-    def __init__(self, config, Y, r):
+    def __init__(self, config, Y, r, silent=False):
         """
         initialization of the Sigmoid-DE algorithm class
         :param config: contains hyper-parameters of Sigmoid-DE algorithm
         :param Y: normalized feature Y, a list of T np arrays with shape (I, D)
         :param r: actual rank, a list of T np arrays with shape (I), here T is one timestamp later than T in param Y
         """
+        # print or not
+        self.silent = silent
+
         # params
         self.I = [_.shape[0] for _ in Y]  # a list of numbers of training stocks
         self.T = len(Y)  # number of timestamps
@@ -225,7 +226,8 @@ class SigDE:
         :return:
         """
         if fitness > self.max_fitness:
-            print('update result! fitness:%f' % fitness)
+            if not self.silent:
+                print('update result! fitness:%f' % fitness)
             self.max_fitness = fitness
             self.best_variables = x_sig
             self.best_g = self.g
@@ -239,14 +241,14 @@ class SigDE:
         for g in range(self.G):
             self.g = g
             # termination on condition (2)
-            if self.g - self.best_g > 15:
+            if self.g - self.best_g > 25:
                 break
             if g % 20 == 0:
-                print("begin generation %d" % g)
+                if not self.silent:
+                    print("begin generation %d" % g)
             self.mutation()
             self.crossover()
             self.selection()
 
-        # print(self.best_variables)
         return self.best_variables
 

@@ -1,5 +1,6 @@
 import numpy as np
 from code.util import load_pickle
+import os
 
 
 def z_score_normalization(feature_data, indicator):
@@ -100,7 +101,6 @@ def get_all_data(mode='input'):
     # path
     if mode == 'input':
         feature_path = 'data/input_data/monthly/features.pkl'
-        # price_path = 'data/input_data/monthly/price.pkl'
         indicator_path = 'data/input_data/indicators.pkl'
         return_path = 'data/input_data/monthly/returns.pkl'
     else:
@@ -110,9 +110,13 @@ def get_all_data(mode='input'):
 
     # load
     feature_data = load_pickle(feature_path)
-    # price_data = load_pickle(price_path)
-    indicator_list = load_pickle(indicator_path)
     return_data = load_pickle(return_path)
+
+    # if no indicator file, generate one
+    if os.path.exists(indicator_path):
+        indicator_list = load_pickle(indicator_path)
+    else:
+        indicator_list = np.array([1 for _ in range(feature_data[0].shape[1])])
 
     # call data_preprocess
     return data_preprocess(feature_data, return_data, indicator_list)
