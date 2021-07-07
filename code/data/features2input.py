@@ -2,6 +2,7 @@ import numpy as np
 from code.util import dump_pickle
 from code.data.get_raw_data import get_month_data_feature45, load_pickle
 
+
 factor_list = ['ret', 'ret_max', 'std_ret', 'std_vol', 'pe_ratio', 'turnover_ratio',
                'pb_ratio', 'ps_ratio', 'pcf_ratio', 'capitalization', 'market_cap',
                'circulating_cap', 'circulating_market_cap', 'pe_ratio_lyr', 'eps',
@@ -62,24 +63,24 @@ def features2input():
         returns.append(np.array(returns_t))
         stock_names.append(np.array(stock_names_t))
 
-        # features to market_caps
-        for array in features:
-            market_caps.append(array[:, 10])
+    # features to market_caps
+    for array in features:
+        market_caps.append(array[:, 10])
 
-        # path
-        features_path = './input_data/monthly/features.pkl'
-        returns_path = './input_data/monthly/returns.pkl'
-        stock_names_path = './input_data/monthly/stock_names.pkl'
-        market_caps_path = './input_data/monthly/market_caps.pkl'
+    # path
+    features_path = './input_data/monthly/features.pkl'
+    returns_path = './input_data/monthly/returns.pkl'
+    stock_names_path = './input_data/monthly/stock_names.pkl'
+    market_caps_path = './input_data/monthly/market_caps.pkl'
 
-        # dump
-        dump_pickle(features_path, features)
-        dump_pickle(returns_path, returns)
-        dump_pickle(stock_names_path, stock_names)
-        dump_pickle(market_caps_path, market_caps)
+    # dump
+    dump_pickle(features_path, features)
+    dump_pickle(returns_path, returns)
+    dump_pickle(stock_names_path, stock_names)
+    dump_pickle(market_caps_path, market_caps)
 
 
 if __name__ == '__main__':
-    # features2input()
-    names = load_pickle('./input_data/monthly/stock_names.pkl')
-    print([_.shape[0] for _ in names])
+    features2input()
+    # names = load_pickle('./input_data/monthly/stock_names.pkl')
+    # print([_.shape[0] for _ in names])

@@ -5,6 +5,13 @@
   "G": 50,
   "tol": 0.00001,
   "m_rate": 0.2,
+
   "min_train_periods": 2,
-  "times_per_case": 30
+  "times_per_case": 1,
+  "num_feat_timestamps": 1,
+  "padding_or_ignore": "padding",
+
+  "TC": 0.001,
+  "N_Y": 12,
+  "MAR": 0
 }

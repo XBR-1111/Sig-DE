@@ -64,7 +64,7 @@ def return_to_rank(returns):
 #     return np.log(price[:, 1:] / price[:, :-1])
 
 
-def data_preprocess(feature_data, return_data, indicator):
+def data_preprocess(feature_data, return_data, indicator, market_cap_data):
     """
     main function of data preparation. generate rank_data and Y based on the input data
     :param feature_data: V in equ(1), D-dimensional feature of I stocks in T timestamp,
@@ -72,6 +72,7 @@ def data_preprocess(feature_data, return_data, indicator):
     :param return_data: return of I stokes in T timestamps,
                     a list of numpy array with shape (I), with length T
     :param indicator: np array with shape (D), elements in {-1, 1}
+    :param market_cap_data:
     :return: Y, rank_data, return_data
     """
 
@@ -89,10 +90,10 @@ def data_preprocess(feature_data, return_data, indicator):
     # Y = Y[:-1]
     # rank_data = rank_data[1:]
     # return_data = return_data[1:]
-    return Y, rank_data, return_data
+    return Y, rank_data, return_data, market_cap_data
 
 
-def get_all_data(mode='input'):
+def get_all_data(num_feat_timestamps, padding_or_ignore, mode='input'):
     """
     load input data and convert them to the input of the model
     :return:
@@ -103,14 +104,20 @@ def get_all_data(mode='input'):
         feature_path = 'data/input_data/monthly/features.pkl'
         indicator_path = 'data/input_data/indicators.pkl'
         return_path = 'data/input_data/monthly/returns.pkl'
+        market_cap_path = 'data/input_data/monthly/market_caps.pkl'
+        stock_names_path = 'data/input_data/monthly/stock_names.pkl'
     else:
         feature_path = 'test/features.pkl'
         indicator_path = 'test/indicators.pkl'
         return_path = 'test/returns.pkl'
+        market_cap_path = 'test/market_caps.pkl'
+        stock_names_path = 'test/stock_names.pkl'
 
     # load
     feature_data = load_pickle(feature_path)
     return_data = load_pickle(return_path)
+    market_cap_data = load_pickle(market_cap_path)
+    stock_names = load_pickle(stock_names_path)
 
     # if no indicator file, generate one
     if os.path.exists(indicator_path):
@@ -119,4 +126,41 @@ def get_all_data(mode='input'):
         indicator_list = np.array([1 for _ in range(feature_data[0].shape[1])])
 
     # call data_preprocess
-    return data_preprocess(feature_data, return_data, indicator_list)
+    Y, rank_data, return_data, market_cap_data = \
+        data_preprocess(feature_data, return_data, indicator_list, market_cap_data)
+
+    # deal with time sequence of features
+    if padding_or_ignore == 'padding':
+        # new Y
+        Y_new = []
+
+        for i in range(num_feat_timestamps - 1, len(Y)):
+            Y_new_i = [] # with shape (I, D * num_feat_timestamps)
+            Y_i = Y[i]  # shape (I,D)
+            Y_new_i.append(Y_i)
+            stock_names_i = stock_names[i]
+
+            for j in range(1, num_feat_timestamps):
+                Y_i_j_new = np.zeros_like(Y_i)  # shape (I,D)
+                Y_i_j = Y[i-j]
+                stock_names_i_j = stock_names[i-j]
+
+                for index, stock in enumerate(stock_names_i):
+                    if stock in stock_names_i_j:
+                        Y_i_j_new[index, :] = Y_i_j[np.where(stock_names_i_j == stock), :]
+                    else:
+                        Y_i_j_new[index, :] = Y_new_i[0][index, :]
+
+                Y_new_i.insert(0, Y_i_j_new)
+
+            Y_new_i = np.concatenate(Y_new_i, axis=1)
+            Y_new.append(Y_new_i)
+        rank_data_new = rank_data[num_feat_timestamps-1:]
+        return_data_new = return_data[num_feat_timestamps-1:]
+        market_cap_data_new = market_cap_data[num_feat_timestamps-1:]
+    else:
+        Y_new = []
+        # not complete yet
+        assert False
+
+    return Y_new, rank_data_new, return_data_new, market_cap_data_new

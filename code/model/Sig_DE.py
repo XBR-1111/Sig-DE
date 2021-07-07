@@ -1,4 +1,5 @@
 import numpy as np
+from code.util import cal_ic_spearman
 
 
 def my_sigmoid(X, D):
@@ -19,17 +20,6 @@ def my_sigmoid(X, D):
     x1[:D] = (np.random.random(size=sig.shape) <= sig)
 
     return x1
-
-
-def cal_ic(r_proposed, r_actual):
-    """
-    Spearman correlation based on equ(5), (objective func / fitness func)
-    :param r_proposed: shape (I) score ranking of stock i by the proposed model at time t
-    :param r_actual: shape (I) actual return ranking in the next period t+1
-    :return: a floating number indicating normalized similarity
-    """
-    assert r_proposed.shape == r_actual.shape
-    return np.cov(r_proposed, r_actual)[0, 1] / np.sqrt(np.var(r_proposed) * np.var(r_actual))
 
 
 class SigDE:
@@ -208,7 +198,7 @@ class SigDE:
         # calculate ic_t
         ic_t_list = np.zeros(shape=[self.T])
         for t in range(self.T):
-            ic_t_list[t] = cal_ic(r[t], self.r[t])
+            ic_t_list[t] = cal_ic_spearman(r[t], self.r[t])
 
         # the avg
         fitness = ic_t_list.mean()
