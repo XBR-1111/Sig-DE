@@ -23,7 +23,7 @@ def my_sigmoid(X, D):
 
 
 class SigDE:
-    def __init__(self, config, Y, r, silent=False):
+    def __init__(self, config, Y, r, returns, m, silent=False):
         """
         initialization of the Sigmoid-DE algorithm class
         :param config: contains hyper-parameters of Sigmoid-DE algorithm
@@ -32,6 +32,9 @@ class SigDE:
         """
         # print or not
         self.silent = silent
+
+        # num of stocks selected
+        self.m = m
 
         # params
         self.I = [_.shape[0] for _ in Y]  # a list of numbers of training stocks
@@ -42,6 +45,7 @@ class SigDE:
         self.Cr = config.get('Cr', 0.5)  # the crossover rate in (8) predefined between 0 and 1
         self.G = config.get('G', 100)  # iteration maximum
         self.tol = config.get('tol', 10 ** (-5))  # applied for the termination strategy
+        self.opt = config.get('opt', 'IC')  # IC return sharpe
 
         # normalized feature Y
         self.Y = Y  # a list of T np arrays with shape (I, D)
@@ -49,6 +53,9 @@ class SigDE:
         # actual rank
         self.r = r  # a list of T np arrays with shape (I)
         assert [_.shape[0] for _ in r] == self.I and len(r) == self.T
+
+        # returns
+        self.returns = returns
 
         # matrix that used for the DE algorithm, with shape (P, 2*D)
         self.X = None  # the population
@@ -188,20 +195,38 @@ class SigDE:
 
         # get the rank r_{i,t} of score S_{i,t}, r wis a list of T np arrays with shape I
         r = []
+        sorted_index_list = []
         for index, s in enumerate(S):
             sorted_index = np.argsort(-s, axis=0)  # a list of index(desc)
+            sorted_index_list.append(sorted_index[:self.m])
             r_i = np.zeros_like(sorted_index)  # index list to rank list
             r_i[sorted_index] = np.arange(1, self.I[index] + 1)
             r.append(r_i)
         # r: each column contains (1,2,3,...,)
 
-        # calculate ic_t
-        ic_t_list = np.zeros(shape=[self.T])
-        for t in range(self.T):
-            ic_t_list[t] = cal_ic_spearman(r[t], self.r[t])
+        if self.opt == 'IC':
+            # calculate ic_t
+            ic_t_list = np.zeros(shape=[self.T])
+            for t in range(self.T):
+                ic_t_list[t] = cal_ic_spearman(r[t], self.r[t])
 
-        # the avg
-        fitness = ic_t_list.mean()
+            # the avg
+            fitness = ic_t_list.mean()
+        elif self.opt == 'return':
+            returns_t_list = np.zeros(shape=[self.T])
+            for t in range(self.T):
+                returns_t_list[t] = self.returns[t][sorted_index_list[t]].mean()
+            # the avg
+            fitness = returns_t_list.mean()
+        elif self.opt == 'sharpe':
+            returns_t_list = np.zeros(shape=[self.T])
+            for t in range(self.T):
+                returns_t_list[t] = self.returns[t][sorted_index_list[t]].mean()
+
+            # the avg
+            fitness = returns_t_list.mean() / returns_t_list.std()
+        else:
+            assert False
 
         # update best performance
         self.update(x_sig, fitness)
@@ -231,7 +256,7 @@ class SigDE:
         for g in range(self.G):
             self.g = g
             # termination on condition (2)
-            if self.g - self.best_g > 25:
+            if self.g - self.best_g > 15:
                 break
             if g % 20 == 0:
                 if not self.silent:

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from code.util import load_pickle
 from code.evaluation.evaluation import eval_6
 
-def show_result(num):
+def show_result(num, mode):
     """
 
     :param num: num of cases
@@ -15,8 +15,15 @@ def show_result(num):
     print(eval_dct)
     port_ret_equal_weight = eval_dct['port_ret_equal_weight']
     port_ret_market_cap = eval_dct['port_ret_market_cap']
-    zz500 = load_pickle('./data/input_data/monthly/zz500.pkl')
-    hs300 = load_pickle('./data/input_data/monthly/hs300.pkl')
+    if mode == 'full':
+        zz500_path = './data/input_data/monthly/zz500.pkl'
+        hs300_path = './data/input_data/monthly/hs300.pkl'
+    else:
+        zz500_path = './data/input_data/monthly/zz500_s.pkl'
+        hs300_path = './data/input_data/monthly/hs300_s.pkl'
+
+    zz500 = load_pickle(zz500_path)
+    hs300 = load_pickle(hs300_path)
     zz500 = zz500[zz500.shape[0]-num:]
     hs300 = hs300[hs300.shape[0]-num:]
     assert port_ret_equal_weight.shape == port_ret_market_cap.shape
@@ -36,10 +43,13 @@ def show_result(num):
     # figure 1
     plt.figure()
     plt.plot(accu_ew, label="proposed method(ew)")
-    plt.plot(accu_mc, label="proposed method(mc)")
+    plt.plot(accu_mc, label="proposed method(sm)")
     plt.plot(accu_zz500, label="zz500")
     plt.plot(accu_hs300, label="hs300")
-    plt.title("accumulative return from 2005 July to 2020 December")  # 图形标题
+    if mode == 'full':
+        plt.title("accumulative return from 2005 July to 2020 December")  # 图形标题
+    else:
+        plt.title("accumulative return from 2017 Jan to 2020 December")  # 图形标题
     plt.xlabel("period")  # x轴名称
     plt.ylabel("accumulative return")  # y 轴名称
     plt.legend()
@@ -49,10 +59,13 @@ def show_result(num):
     # figure 2
     plt.figure()
     plt.plot(accu_ew-accu_zz500, label="hedge_ret_500(ew)")
-    plt.plot(accu_mc-accu_zz500, label="hedge_ret_500(mc)")
+    plt.plot(accu_mc-accu_zz500, label="hedge_ret_500(sm)")
     plt.plot(accu_ew-accu_hs300, label="hedge_ret_300(ew)")
-    plt.plot(accu_mc-accu_hs300, label="hedge_ret_300(mc)")
-    plt.title("hedge_ret from 2005 July to 2020 December")  # 图形标题
+    plt.plot(accu_mc-accu_hs300, label="hedge_ret_300(sm)")
+    if mode == 'full':
+        plt.title("hedge_ret from 2005 July to 2020 December")  # 图形标题
+    else:
+        plt.title("hedge_ret from 2017 Jan to 2020 December")  # 图形标题
     plt.xlabel("period")  # x轴名称
     plt.ylabel("accumulative return")  # y 轴名称
     plt.legend()
@@ -83,7 +96,173 @@ def eval_zz500_hs300():
 #     plt.show()
 
 
+def show_sw():
+    """
+    draw sliding window result
+    :return:
+    """
+    eval_path_5 = 'history/A0_sw/A0_sw_5/evals.pkl'
+    eval_path_10 = 'history/A0_sw/A0_sw_10/evals.pkl'
+    eval_path_20 = 'history/A0_sw/A0_sw_20/evals.pkl'
+    eval_path_50 = 'history/A0_sw/A0_sw_50/evals.pkl'
+    eval_path_infty = './history/A0_sm/evals.pkl'
+
+    eval_dct_5 = load_pickle(eval_path_5)
+    eval_dct_10 = load_pickle(eval_path_10)
+    eval_dct_20 = load_pickle(eval_path_20)
+    eval_dct_50 = load_pickle(eval_path_50)
+    eval_dct_infty = load_pickle(eval_path_infty)
+
+    port_ret_ew_5 = eval_dct_5['port_ret_equal_weight']
+    port_ret_mc_5 = eval_dct_5['port_ret_market_cap']
+    port_ret_ew_10 = eval_dct_10['port_ret_equal_weight']
+    port_ret_mc_10 = eval_dct_10['port_ret_market_cap']
+    port_ret_ew_20 = eval_dct_20['port_ret_equal_weight']
+    port_ret_mc_20 = eval_dct_20['port_ret_market_cap']
+    port_ret_ew_50 = eval_dct_50['port_ret_equal_weight']
+    port_ret_mc_50 = eval_dct_50['port_ret_market_cap']
+    port_ret_ew_infty = eval_dct_infty['port_ret_equal_weight']
+    port_ret_mc_infty = eval_dct_infty['port_ret_market_cap']
+
+    #
+    accu_port_ret_ew_5 = np.zeros(port_ret_ew_5.shape[0] + 1)
+    accu_port_ret_mc_5 = np.zeros_like(accu_port_ret_ew_5)
+    accu_port_ret_ew_10 = np.zeros_like(accu_port_ret_ew_5)
+    accu_port_ret_mc_10 = np.zeros_like(accu_port_ret_ew_5)
+    accu_port_ret_ew_20 = np.zeros_like(accu_port_ret_ew_5)
+    accu_port_ret_mc_20 = np.zeros_like(accu_port_ret_ew_5)
+    accu_port_ret_ew_50 = np.zeros_like(accu_port_ret_ew_5)
+    accu_port_ret_mc_50 = np.zeros_like(accu_port_ret_ew_5)
+    accu_port_ret_ew_infty = np.zeros_like(accu_port_ret_ew_5)
+    accu_port_ret_mc_infty = np.zeros_like(accu_port_ret_ew_5)
+
+    accu_port_ret_ew_5[0], accu_port_ret_mc_5[0] = 1, 1
+    accu_port_ret_ew_10[0], accu_port_ret_mc_10[0] = 1, 1
+    accu_port_ret_ew_20[0], accu_port_ret_mc_20[0] = 1, 1
+    accu_port_ret_ew_50[0], accu_port_ret_mc_50[0] = 1, 1
+    accu_port_ret_ew_infty[0], accu_port_ret_mc_infty[0] = 1, 1
+
+    for i in range(1, accu_port_ret_ew_5.shape[0]):
+        accu_port_ret_ew_5[i] = accu_port_ret_ew_5[i-1] + port_ret_ew_5[i-1]
+        accu_port_ret_mc_5[i] = accu_port_ret_mc_5[i-1] + port_ret_mc_5[i-1]
+        accu_port_ret_ew_10[i] = accu_port_ret_ew_10[i-1] + port_ret_ew_10[i-1]
+        accu_port_ret_mc_10[i] = accu_port_ret_mc_10[i-1] + port_ret_mc_10[i-1]
+        accu_port_ret_ew_20[i] = accu_port_ret_ew_20[i-1] + port_ret_ew_20[i-1]
+        accu_port_ret_mc_20[i] = accu_port_ret_mc_20[i-1] + port_ret_mc_20[i-1]
+        accu_port_ret_ew_50[i] = accu_port_ret_ew_50[i-1] + port_ret_ew_50[i-1]
+        accu_port_ret_mc_50[i] = accu_port_ret_mc_50[i-1] + port_ret_mc_50[i-1]
+        accu_port_ret_ew_infty[i] = accu_port_ret_ew_infty[i-1] + port_ret_ew_infty[i-1]
+        accu_port_ret_mc_infty[i] = accu_port_ret_mc_infty[i-1] + port_ret_mc_infty[i-1]
+
+    # figure 1
+    plt.figure()
+    plt.plot(accu_port_ret_ew_5, label="sw size=5")
+    plt.plot(accu_port_ret_ew_10, label="sw size=10")
+    plt.plot(accu_port_ret_ew_20, label="sw size=20")
+    plt.plot(accu_port_ret_ew_50, label="sw size=50")
+    plt.plot(accu_port_ret_ew_infty, label="sw size=infty")
+    plt.title("accumulative return from 2005 July to 2020 December(ew)")  # 图形标题
+    plt.xlabel("period")  # x轴名称
+    plt.ylabel("accumulative return")  # y 轴名称
+    plt.legend()
+    plt.savefig('./figure1.jpg')
+    plt.show()
+
+    # figure 2
+    plt.figure()
+    plt.plot(accu_port_ret_mc_5, label="sw size=5")
+    plt.plot(accu_port_ret_mc_10, label="sw size=10")
+    plt.plot(accu_port_ret_mc_20, label="sw size=20")
+    plt.plot(accu_port_ret_mc_50, label="sw size=50")
+    plt.plot(accu_port_ret_mc_infty, label="sw size=infty")
+    plt.title("accumulative return from 2005 July to 2020 December(mc)")  # 图形标题
+    plt.xlabel("period")  # x轴名称
+    plt.ylabel("accumulative return")  # y 轴名称
+    plt.legend()
+    plt.savefig('./figure2.jpg')
+    plt.show()
+
+
+def show_m():
+    """
+    draw sliding window result
+    :return:
+    """
+    eval_path_10 = 'history/A1_m/A1_m_10/evals.pkl'
+    eval_path_15 = 'history/A1_m/A1_m_15/evals.pkl'
+    eval_path_20 = 'history/A0_sm/evals.pkl'
+    eval_path_25 = 'history/A1_m/A1_m_25/evals.pkl'
+
+    eval_dct_10 = load_pickle(eval_path_10)
+    eval_dct_15 = load_pickle(eval_path_15)
+    eval_dct_20 = load_pickle(eval_path_20)
+    print(eval_dct_20)
+    exit(0)
+    eval_dct_25 = load_pickle(eval_path_25)
+
+
+    port_ret_ew_10 = eval_dct_10['port_ret_equal_weight']
+    port_ret_mc_10 = eval_dct_10['port_ret_market_cap']
+    port_ret_ew_15 = eval_dct_15['port_ret_equal_weight']
+    port_ret_mc_15 = eval_dct_15['port_ret_market_cap']
+    port_ret_ew_20 = eval_dct_20['port_ret_equal_weight']
+    port_ret_mc_20 = eval_dct_20['port_ret_market_cap']
+    port_ret_ew_25 = eval_dct_25['port_ret_equal_weight']
+    port_ret_mc_25 = eval_dct_25['port_ret_market_cap']
+
+    #
+    accu_port_ret_ew_10 = np.zeros(port_ret_ew_10.shape[0] + 1)
+    accu_port_ret_mc_10 = np.zeros_like(accu_port_ret_ew_10)
+    accu_port_ret_ew_15 = np.zeros_like(accu_port_ret_ew_10)
+    accu_port_ret_mc_15 = np.zeros_like(accu_port_ret_ew_10)
+    accu_port_ret_ew_20 = np.zeros_like(accu_port_ret_ew_10)
+    accu_port_ret_mc_20 = np.zeros_like(accu_port_ret_ew_10)
+    accu_port_ret_ew_25 = np.zeros_like(accu_port_ret_ew_10)
+    accu_port_ret_mc_25 = np.zeros_like(accu_port_ret_ew_10)
+
+
+    accu_port_ret_ew_10[0], accu_port_ret_mc_10[0] = 1, 1
+    accu_port_ret_ew_15[0], accu_port_ret_mc_15[0] = 1, 1
+    accu_port_ret_ew_20[0], accu_port_ret_mc_20[0] = 1, 1
+    accu_port_ret_ew_25[0], accu_port_ret_mc_25[0] = 1, 1
+
+    for i in range(1, accu_port_ret_ew_10.shape[0]):
+        accu_port_ret_ew_10[i] = accu_port_ret_ew_10[i-1] + port_ret_ew_10[i-1]
+        accu_port_ret_mc_10[i] = accu_port_ret_mc_10[i-1] + port_ret_mc_10[i-1]
+        accu_port_ret_ew_15[i] = accu_port_ret_ew_15[i-1] + port_ret_ew_15[i-1]
+        accu_port_ret_mc_15[i] = accu_port_ret_mc_15[i-1] + port_ret_mc_15[i-1]
+        accu_port_ret_ew_20[i] = accu_port_ret_ew_20[i-1] + port_ret_ew_20[i-1]
+        accu_port_ret_mc_20[i] = accu_port_ret_mc_20[i-1] + port_ret_mc_20[i-1]
+        accu_port_ret_ew_25[i] = accu_port_ret_ew_25[i-1] + port_ret_ew_25[i-1]
+        accu_port_ret_mc_25[i] = accu_port_ret_mc_25[i-1] + port_ret_mc_25[i-1]
+
+
+    # figure 1
+    plt.figure()
+    plt.plot(accu_port_ret_ew_10, label="m=0.1")
+    plt.plot(accu_port_ret_ew_15, label="m=0.15")
+    plt.plot(accu_port_ret_ew_20, label="m=0.2")
+    plt.plot(accu_port_ret_ew_25, label="m=0.25")
+    plt.title("accumulative return from 2005 July to 2020 December(ew)")  # 图形标题
+    plt.xlabel("period")  # x轴名称
+    plt.ylabel("accumulative return")  # y 轴名称
+    plt.legend()
+    plt.savefig('./figure1.jpg')
+    plt.show()
+
+    # figure 2
+    plt.figure()
+    plt.plot(accu_port_ret_mc_10, label="m=0.1")
+    plt.plot(accu_port_ret_mc_15, label="m=0.15")
+    plt.plot(accu_port_ret_mc_20, label="m=0.2")
+    plt.plot(accu_port_ret_mc_25, label="m=0.25")
+    plt.title("accumulative return from 2005 July to 2020 December(ew)")  # 图形标题
+    plt.xlabel("period")  # x轴名称
+    plt.ylabel("accumulative return")  # y 轴名称
+    plt.legend()
+    plt.savefig('./figure2.jpg')
+    plt.show()
+
 if __name__ == '__main__':
     # eval_zz500_hs300()
-    R = load_pickle('./history/A0/evals.pkl')
-    print(R)
+    show_m()

@@ -122,9 +122,9 @@ class Evaluation:
         m_stock_indexes = sorted_index[:m]
         m_returns = returns[m_stock_indexes]
         m_market_caps = market_caps[m_stock_indexes]
+
         self.port_ret_equal_weight_t.append(m_returns.mean())
-        self.port_ret_market_cap_t.append(np.dot(m_returns, (1/m_market_caps) / (1/m_market_caps).sum()))
-        # self.port_ret_equal_weight_t.append(m_returns.mean())
+        self.port_ret_market_cap_t.append(np.dot(m_returns, np.exp(m_market_caps/m_market_caps.mean()) / np.exp(m_market_caps/m_market_caps.mean()).sum()))
         # self.port_ret_market_cap_t.append(np.dot(m_returns, m_market_caps / m_market_caps.sum()))
 
     def final_eval(self):

@@ -93,19 +93,25 @@ def data_preprocess(feature_data, return_data, indicator, market_cap_data):
     return Y, rank_data, return_data, market_cap_data
 
 
-def get_all_data(num_feat_timestamps, padding_or_ignore, mode='input'):
+def get_all_data(num_feat_timestamps, padding_or_ignore, mode='small'):
     """
     load input data and convert them to the input of the model
     :return:
     """
 
     # path
-    if mode == 'input':
+    if mode == 'full':
         feature_path = 'data/input_data/monthly/features.pkl'
         indicator_path = 'data/input_data/indicators.pkl'
         return_path = 'data/input_data/monthly/returns.pkl'
         market_cap_path = 'data/input_data/monthly/market_caps.pkl'
         stock_names_path = 'data/input_data/monthly/stock_names.pkl'
+    elif mode == 'small':
+        feature_path = 'data/input_data/monthly/features_s.pkl'
+        indicator_path = 'data/input_data/indicators_s.pkl'
+        return_path = 'data/input_data/monthly/returns_s.pkl'
+        market_cap_path = 'data/input_data/monthly/market_caps_s.pkl'
+        stock_names_path = 'data/input_data/monthly/stock_names_s.pkl'
     else:
         feature_path = 'test/features.pkl'
         indicator_path = 'test/indicators.pkl'

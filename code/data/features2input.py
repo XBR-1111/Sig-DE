@@ -2,7 +2,6 @@ import numpy as np
 from code.util import dump_pickle
 from code.data.get_raw_data import get_month_data_feature45, load_pickle
 
-
 factor_list = ['ret', 'ret_max', 'std_ret', 'std_vol', 'pe_ratio', 'turnover_ratio',
                'pb_ratio', 'ps_ratio', 'pcf_ratio', 'capitalization', 'market_cap',
                'circulating_cap', 'circulating_market_cap', 'pe_ratio_lyr', 'eps',
@@ -32,10 +31,10 @@ def features2input():
     stock_names = []  # a list of np.array (I)
     market_caps = []  # a list of np.array (I)
 
-    for t in range(len(feature_data)-1):
+    for t in range(len(feature_data) - 1):
         print(t)
         current_feature = feature_data[t]
-        next_feature = feature_data[t+1]
+        next_feature = feature_data[t + 1]
         features_t = []
         returns_t = []
         stock_names_t = []
@@ -80,7 +79,104 @@ def features2input():
     dump_pickle(market_caps_path, market_caps)
 
 
+def input_20():
+    """
+    remove stocks with 20% smallest market cap
+    :return:
+    """
+    # path
+    features_path = './input_data/monthly/features.pkl'
+    returns_path = './input_data/monthly/returns.pkl'
+    stock_names_path = './input_data/monthly/stock_names.pkl'
+    market_caps_path = './input_data/monthly/market_caps.pkl'
+
+    # load
+    feature_data = load_pickle(features_path)
+    return_data = load_pickle(returns_path)
+    stock_name_data = load_pickle(stock_names_path)
+    market_cap_data = load_pickle(market_caps_path)
+
+    # ratio
+    ratio = 0.2
+
+    # result
+    new_feature_data = []
+    new_return_data = []
+    new_stock_name_data = []
+    new_market_cap_data = []
+
+    for i, market_cap in enumerate(market_cap_data):
+        m = int(market_cap.shape[0] * (1 - ratio))
+        sorted_index = np.argsort(-market_cap)  # desc
+        selected_index = sorted_index[:m]
+        new_feature_data.append(feature_data[i][selected_index, :])
+        new_return_data.append(return_data[i][selected_index])
+        new_stock_name_data.append(stock_name_data[i][selected_index])
+        new_market_cap_data.append(market_cap_data[i][selected_index])
+
+    new_features_path = './input_data/monthly/features_20.pkl'
+    new_returns_path = './input_data/monthly/returns_20.pkl'
+    new_stock_names_path = './input_data/monthly/stock_names_20.pkl'
+    new_market_caps_path = './input_data/monthly/market_caps_20.pkl'
+
+    dump_pickle(new_features_path, new_feature_data)
+    dump_pickle(new_returns_path, new_return_data)
+    dump_pickle(new_stock_names_path, new_stock_name_data)
+    dump_pickle(new_market_caps_path, new_market_cap_data)
+
+
+def input_50():
+    """
+    construct a smaller training/testing dataset
+    :return:
+    """
+    # path
+    features_path = './input_data/monthly/features.pkl'
+    returns_path = './input_data/monthly/returns.pkl'
+    stock_names_path = './input_data/monthly/stock_names.pkl'
+    market_caps_path = './input_data/monthly/market_caps.pkl'
+    hs300_path = './input_data/monthly/hs300.pkl'
+    zz500_path = './input_data/monthly/zz500.pkl'
+
+    # load
+    feature_data = load_pickle(features_path)
+    return_data = load_pickle(returns_path)
+    stock_name_data = load_pickle(stock_names_path)
+    market_cap_data = load_pickle(market_caps_path)
+    hs300_data = load_pickle(hs300_path)
+    zz500_data = load_pickle(zz500_path)
+
+    # T
+    T = 50
+    length = len(feature_data)
+    feature_data = feature_data[length-T:length]
+    return_data = return_data[length-T:length]
+    stock_name_data = stock_name_data[length-T:length]
+    market_cap_data = market_cap_data[length-T:length]
+    hs300_data = hs300_data[length-T:length]
+    zz500_data = zz500_data[length-T:length]
+
+    # new path
+    new_features_path = './input_data/monthly/features_s.pkl'
+    new_returns_path = './input_data/monthly/returns_s.pkl'
+    new_stock_names_path = './input_data/monthly/stock_names_s.pkl'
+    new_market_caps_path = './input_data/monthly/market_caps_s.pkl'
+    new_hs300_path = './input_data/monthly/hs300_s.pkl'
+    new_zz500_path = './input_data/monthly/zz500_s.pkl'
+
+    # sump
+    dump_pickle(new_features_path, feature_data)
+    dump_pickle(new_returns_path, return_data)
+    dump_pickle(new_stock_names_path, stock_name_data)
+    dump_pickle(new_market_caps_path, market_cap_data)
+    dump_pickle(new_hs300_path, hs300_data)
+    dump_pickle(new_zz500_path, zz500_data)
+
+
 if __name__ == '__main__':
-    features2input()
+    # features2input()
+
     # names = load_pickle('./input_data/monthly/stock_names.pkl')
     # print([_.shape[0] for _ in names])
+
+    input_50()
