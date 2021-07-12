@@ -16,7 +16,7 @@ def z_score_normalization(feature_data, indicator):
     Y = list()
 
     for array in feature_data:
-
+        print(array)
         # cal mean and standard deviation
         v_mean = np.mean(array, axis=0)  # shape (D)
         v_std = np.std(array, axis=0)  # shape (D)
@@ -106,24 +106,31 @@ def get_all_data(num_feat_timestamps, padding_or_ignore, mode='small'):
         return_path = 'data/input_data/monthly/returns.pkl'
         market_cap_path = 'data/input_data/monthly/market_caps.pkl'
         stock_names_path = 'data/input_data/monthly/stock_names.pkl'
+        zz500_path = 'data/input_data/monthly/zz500.pkl'
+        hs300_path = 'data/input_data/monthly/hs300.pkl'
     elif mode == 'small':
         feature_path = 'data/input_data/monthly/features_s.pkl'
         indicator_path = 'data/input_data/indicators_s.pkl'
         return_path = 'data/input_data/monthly/returns_s.pkl'
         market_cap_path = 'data/input_data/monthly/market_caps_s.pkl'
         stock_names_path = 'data/input_data/monthly/stock_names_s.pkl'
+        zz500_path = 'data/input_data/monthly/zz500_s.pkl'
+        hs300_path = 'data/input_data/monthly/hs300_s.pkl'
     else:
-        feature_path = 'test/features.pkl'
-        indicator_path = 'test/indicators.pkl'
-        return_path = 'test/returns.pkl'
-        market_cap_path = 'test/market_caps.pkl'
-        stock_names_path = 'test/stock_names.pkl'
+        assert False
+        # feature_path = 'test/features.pkl'
+        # indicator_path = 'test/indicators.pkl'
+        # return_path = 'test/returns.pkl'
+        # market_cap_path = 'test/market_caps.pkl'
+        # stock_names_path = 'test/stock_names.pkl'
 
     # load
     feature_data = load_pickle(feature_path)
     return_data = load_pickle(return_path)
     market_cap_data = load_pickle(market_cap_path)
     stock_names = load_pickle(stock_names_path)
+    zz500_data = load_pickle(zz500_path)
+    hs300_data = load_pickle(hs300_path)
 
     # if no indicator file, generate one
     if os.path.exists(indicator_path):
@@ -169,4 +176,4 @@ def get_all_data(num_feat_timestamps, padding_or_ignore, mode='small'):
         # not complete yet
         assert False
 
-    return Y_new, rank_data_new, return_data_new, market_cap_data_new
+    return Y_new, rank_data_new, return_data_new, market_cap_data_new, zz500_data, hs300_data

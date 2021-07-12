@@ -23,7 +23,7 @@ def my_sigmoid(X, D):
 
 
 class SigDE:
-    def __init__(self, config, Y, r, returns, m, silent=False):
+    def __init__(self, config, Y, r, returns, zz500, hs300, m, silent=False):
         """
         initialization of the Sigmoid-DE algorithm class
         :param config: contains hyper-parameters of Sigmoid-DE algorithm
@@ -56,6 +56,10 @@ class SigDE:
 
         # returns
         self.returns = returns
+
+        # zz500 hs300
+        self.zz500 = zz500
+        self.hs300 = hs300
 
         # matrix that used for the DE algorithm, with shape (P, 2*D)
         self.X = None  # the population
@@ -222,7 +226,7 @@ class SigDE:
             returns_t_list = np.zeros(shape=[self.T])
             for t in range(self.T):
                 returns_t_list[t] = self.returns[t][sorted_index_list[t]].mean()
-
+            # returns_t_list = returns_t_list - self.zz500
             # the avg
             fitness = returns_t_list.mean() / returns_t_list.std()
         else:

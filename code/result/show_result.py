@@ -183,6 +183,7 @@ def show_sw():
     plt.show()
 
 
+
 def show_m():
     """
     draw sliding window result
@@ -263,6 +264,87 @@ def show_m():
     plt.savefig('./figure2.jpg')
     plt.show()
 
+
+def show_A2():
+    """
+    draw a2 result
+    :return:
+    """
+    eval_path_return = 'history/A2/A2_f_return/evals.pkl'
+    eval_path_sharpe = 'history/A2/A2_f_sharpe/evals.pkl'
+    eval_path_IC = 'history/A2/A2_f_IC/evals.pkl'
+    eval_path_sharpe_500 = 'history/A2/A2_f_sharpe_500/evals.pkl'
+
+    eval_dct_return = load_pickle(eval_path_return)
+    eval_dct_sharpe = load_pickle(eval_path_sharpe)
+    eval_dct_IC = load_pickle(eval_path_IC)
+    eval_dct_sharpe_500 = load_pickle(eval_path_sharpe_500)
+
+
+    port_ret_ew_return = eval_dct_return['port_ret_equal_weight']
+    port_ret_mc_return = eval_dct_return['port_ret_market_cap']
+    port_ret_ew_sharpe = eval_dct_sharpe['port_ret_equal_weight']
+    port_ret_mc_sharpe = eval_dct_sharpe['port_ret_market_cap']
+    port_ret_ew_IC = eval_dct_IC['port_ret_equal_weight']
+    port_ret_mc_IC = eval_dct_IC['port_ret_market_cap']
+    port_ret_ew_sharpe_500 = eval_dct_sharpe_500['port_ret_equal_weight']
+    port_ret_mc_sharpe_500 = eval_dct_sharpe_500['port_ret_market_cap']
+
+    #
+    accu_port_ret_ew_return = np.zeros(port_ret_ew_return.shape[0] + 1)
+    accu_port_ret_mc_return = np.zeros_like(accu_port_ret_ew_return)
+    accu_port_ret_ew_sharpe = np.zeros_like(accu_port_ret_ew_return)
+    accu_port_ret_mc_sharpe = np.zeros_like(accu_port_ret_ew_return)
+    accu_port_ret_ew_IC = np.zeros_like(accu_port_ret_ew_return)
+    accu_port_ret_mc_IC = np.zeros_like(accu_port_ret_ew_return)
+    accu_port_ret_ew_sharpe_500 = np.zeros_like(accu_port_ret_ew_return)
+    accu_port_ret_mc_sharpe_500 = np.zeros_like(accu_port_ret_ew_return)
+
+
+    accu_port_ret_ew_return[0], accu_port_ret_mc_return[0] = 1, 1
+    accu_port_ret_ew_sharpe[0], accu_port_ret_mc_sharpe[0] = 1, 1
+    accu_port_ret_ew_IC[0], accu_port_ret_mc_IC[0] = 1, 1
+    accu_port_ret_ew_sharpe_500[0], accu_port_ret_mc_sharpe_500[0] = 1, 1
+
+    for i in range(1, accu_port_ret_ew_return.shape[0]):
+        accu_port_ret_ew_return[i] = accu_port_ret_ew_return[i-1] + port_ret_ew_return[i-1]
+        accu_port_ret_mc_return[i] = accu_port_ret_mc_return[i-1] + port_ret_mc_return[i-1]
+        accu_port_ret_ew_sharpe[i] = accu_port_ret_ew_sharpe[i-1] + port_ret_ew_sharpe[i-1]
+        accu_port_ret_mc_sharpe[i] = accu_port_ret_mc_sharpe[i-1] + port_ret_mc_sharpe[i-1]
+        accu_port_ret_ew_IC[i] = accu_port_ret_ew_IC[i-1] + port_ret_ew_IC[i-1]
+        accu_port_ret_mc_IC[i] = accu_port_ret_mc_IC[i-1] + port_ret_mc_IC[i-1]
+        accu_port_ret_ew_sharpe_500[i] = accu_port_ret_ew_sharpe_500[i-1] + port_ret_ew_sharpe_500[i-1]
+        accu_port_ret_mc_sharpe_500[i] = accu_port_ret_mc_sharpe_500[i-1] + port_ret_mc_sharpe_500[i-1]
+
+
+    # figure 1
+    plt.figure()
+    plt.plot(accu_port_ret_ew_return, label="return")
+    plt.plot(accu_port_ret_ew_sharpe, label="sharpe")
+    plt.plot(accu_port_ret_ew_IC, label="IC")
+    plt.plot(accu_port_ret_ew_sharpe_500, label="sharpe(zz500)")
+    plt.title("accumulative return from 2005 July to 2020 December(ew)")  # 图形标题
+    plt.xlabel("period")  # x轴名称
+    plt.ylabel("accumulative return")  # y 轴名称
+    plt.legend()
+    plt.savefig('./figure1.jpg')
+    plt.show()
+
+    # figure 2
+    plt.figure()
+    plt.plot(accu_port_ret_mc_return, label="return")
+    plt.plot(accu_port_ret_mc_sharpe, label="sharpe")
+    plt.plot(accu_port_ret_mc_IC, label="IC")
+    plt.plot(accu_port_ret_mc_sharpe_500, label="sharpe(zz500)")
+    plt.title("accumulative return from 2005 July to 2020 December(ew)")  # 图形标题
+    plt.xlabel("period")  # x轴名称
+    plt.ylabel("accumulative return")  # y 轴名称
+    plt.legend()
+    plt.savefig('./figure2.jpg')
+    plt.show()
+
+
 if __name__ == '__main__':
     # eval_zz500_hs300()
-    show_m()
+    # show_m()
+    show_A2()

@@ -18,7 +18,7 @@ def train_and_predict(mode="small"):
     # get data
     # Y: (I, D) * T rank_data,returns,market_caps: (I) * T , here rank and returns are at next timestamp
     print('preparing data...')
-    Y_data, rank_data, returns, market_caps = get_all_data(num_feat_timestamps, padding_or_ignore, mode)
+    Y_data, rank_data, returns, market_caps, zz500, hs300 = get_all_data(num_feat_timestamps, padding_or_ignore, mode)
     T = len(Y_data)
     I = [_.shape[0] for _ in Y_data]
     assert [_.shape for _ in returns] == [_.shape for _ in rank_data]  # returns = rank_data
@@ -40,10 +40,14 @@ def train_and_predict(mode="small"):
             Y_train = Y_data[max(t - window_size, 0):t]
             r_train = rank_data[max(t - window_size, 0):t]
             returns_train = returns[max(t - window_size, 0):t]
+            zz500_train = zz500[max(t - window_size, 0):t]
+            hs300_train = hs300[max(t - window_size, 0):t]
         else:
             Y_train = Y_data[:t]
             r_train = rank_data[:t]
             returns_train = returns[:t]
+            zz500_train = zz500[:t]
+            hs300_train = hs300[:t]
         m = max(int(config.get('m_rate', 0.2) * I[t]), 1)
 
         print('begin to run on case %d...' % (t - min_train_periods + 1))
@@ -53,7 +57,7 @@ def train_and_predict(mode="small"):
 
         for times in range(times_per_case):
             # init the model
-            model = SigDE(config=config, Y=Y_train, r=r_train, returns=returns_train,m=m, silent=True)
+            model = SigDE(config=config, Y=Y_train, r=r_train, returns=returns_train, zz500=zz500_train, hs300=hs300_train, m=m, silent=True)
 
             # run the model and return feature parameters
             feat_param = model.run()
@@ -75,4 +79,4 @@ def train_and_predict(mode="small"):
 
 
 if __name__ == '__main__':
-    train_and_predict('small')
+    train_and_predict('full')
